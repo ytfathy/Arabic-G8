@@ -1,0 +1,6 @@
+{
+  "name": "منصة التقييمات التفاعلية - اللغة العربية | International Education Egypt",
+  "description": "المنصة التعليمية التفاعلية الرسمية للتقييمات الأسبوعية وتدريبات المهارات وبنك الأسئلة ومنشئ الامتحانات الذكي للصف الثاني الإعدادي - International Education Egypt",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

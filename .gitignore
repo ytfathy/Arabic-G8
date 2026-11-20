@@ -1,0 +1,13 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# AI Studio leftovers, not used by the site (PDF > GitHub 100MB limit)
+.aistudio/
+.playwright-cli/
+public/assets/aistudio/

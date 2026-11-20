@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-size: 19.5px;
+  }
+
+  @media (max-width: 640px) {
+    html {
+      font-size: 18px;
+    }
+  }
+
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    touch-action: manipulation;
+  }
+
+  body {
+    font-family: 'Cairo', 'Alexandria', 'Readex Pro', 'Almarai', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: clamp(18.5px, 2.2vw, 21px);
+    line-height: 1.85;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    color: #0f172a;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Responsive image & media safety */
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    max-width: 100%;
+  }
+
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+  }
+}
+
+/* Animations and Visual Appeal Enhancements */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes floatSoft {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.02);
+  }
+}
+
+@keyframes floatDelay {
+  0%, 100% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@keyframes twinkleStar {
+  0%, 100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px -3px rgba(245, 158, 11, 0.4), 0 0 6px -2px rgba(245, 158, 11, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 28px 3px rgba(245, 158, 11, 0.65), 0 0 12px 2px rgba(245, 158, 11, 0.35);
+  }
+}
+
+@keyframes shimmerEffect {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes gradientPan {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.animate-float-soft {
+  animation: floatSoft 3.2s ease-in-out infinite;
+}
+
+.animate-float-delay {
+  animation: floatDelay 3.8s ease-in-out infinite;
+}
+
+.animate-twinkle {
+  animation: twinkleStar 2.4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+.animate-gradient-pan {
+  background-size: 200% 200%;
+  animation: gradientPan 8s ease infinite;
+}
+
+.card-interactive {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-interactive:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 30px -8px rgba(15, 23, 42, 0.12), 0 6px 12px -4px rgba(15, 23, 42, 0.08);
+}
+
+.btn-glow-gold {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-glow-gold:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px -2px rgba(245, 158, 11, 0.55);
+}
+
+/* Custom scrollbars for clean educational dashboard */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
