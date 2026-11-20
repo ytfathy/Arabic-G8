@@ -10,7 +10,8 @@ import {
   X, 
   Award,
   Zap,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { StudentStats } from '../types/curriculum';
 
@@ -131,6 +132,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-blue-950" />
               <span>إنشاء امتحان</span>
             </button>
+
+            {/* Logout (handled by the login-gate middleware on Vercel) */}
+            <a
+              href="/auth/logout"
+              style={{ textDecoration: 'none' }}
+              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-sm md:text-base font-extrabold text-slate-600 hover:text-blue-950 hover:bg-slate-100 transition-colors whitespace-nowrap border border-slate-200/80 bg-slate-50/50"
+            >
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>خروج</span>
+            </a>
           </div>
 
           {/* Mobile Menu & Quick Action Button */}
@@ -142,6 +153,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-blue-950 fill-blue-950" />
               <span>امتحان</span>
             </button>
+
+            <a
+              href="/auth/logout"
+              style={{ textDecoration: 'none' }}
+              className="sm:hidden p-2 rounded-xl text-slate-700 hover:text-blue-950 hover:bg-slate-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center border border-slate-200/80 bg-slate-50/50"
+              aria-label="تسجيل الخروج"
+              title="تسجيل الخروج"
+            >
+              <LogOut className="w-5 h-5 text-blue-950" />
+            </a>
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
