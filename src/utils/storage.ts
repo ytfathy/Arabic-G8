@@ -1,9 +1,10 @@
-import { StudentStats, UserAnswerRecord, ExamResult, Badge } from '../types/curriculum';
+import { StudentStats, UserAnswerRecord, ExamResult, ExamConfig, Badge } from '../types/curriculum';
 
 const STATS_KEY = 'iee_arabic_stats_v1';
 const ANSWERS_KEY = 'iee_arabic_answers_v1';
 const EXAMS_KEY = 'iee_arabic_exams_v1';
 const BOOKMARKS_KEY = 'iee_arabic_bookmarks_v1';
+const SAVED_EXAMS_KEY = 'iee_arabic_saved_exams_v1';
 
 export const INITIAL_BADGES: Badge[] = [
   {
@@ -155,6 +156,41 @@ export function getStoredExams(): ExamResult[] {
     console.error('Error reading exams:', e);
   }
   return [];
+}
+
+// Exams the student saved by name ("امتحاناتي"): the exact question set, so it can be re-solved later.
+export interface SavedExam {
+  id: string;
+  title: string;
+  createdAt: number;
+  config: ExamConfig;
+  questionIds: string[];
+}
+
+export function getSavedExams(): SavedExam[] {
+  try {
+    const raw = localStorage.getItem(SAVED_EXAMS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error reading saved exams:', e);
+  }
+  return [];
+}
+
+function writeSavedExams(exams: SavedExam[]): void {
+  try {
+    localStorage.setItem(SAVED_EXAMS_KEY, JSON.stringify(exams));
+  } catch (e) {
+    console.error('Error saving exams:', e);
+  }
+}
+
+export function addSavedExam(exam: SavedExam): void {
+  writeSavedExams([exam, ...getSavedExams()]);
+}
+
+export function deleteSavedExam(id: string): void {
+  writeSavedExams(getSavedExams().filter(e => e.id !== id));
 }
 
 export function saveExamResult(result: ExamResult): void {

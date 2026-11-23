@@ -20,7 +20,10 @@ import {
   BarChart3,
   Calendar,
   Layers,
-  Flag
+  Flag,
+  Bookmark,
+  Save,
+  Trash2
 } from 'lucide-react';
 import { 
   Question, 
@@ -32,7 +35,12 @@ import {
 } from '../types/curriculum';
 import { getDistinctLessons, getAllQuestions } from '../data/questionBank';
 import { filterQuestionsForExam, gradeExam, getRecommendedRevisionTopics } from '../utils/examGenerator';
-import { saveExamResult, getStoredExams } from '../utils/storage';
+import { saveExamResult, getStoredExams, getSavedExams, addSavedExam, deleteSavedExam, SavedExam } from '../utils/storage';
+
+const questionsByIds = (ids: string[]): Question[] => {
+  const all = new Map(getAllQuestions().map(q => [q.id, q]));
+  return ids.map(id => all.get(id)).filter((q): q is Question => !!q);
+};
 import { QuestionCard } from './QuestionCard';
 import { mascotService } from '../utils/mascotService';
 
@@ -41,7 +49,7 @@ interface SmartExamGeneratorProps {
   onStatsUpdated?: () => void;
 }
 
-type GeneratorStep = 'dashboard' | 'preview' | 'taking' | 'results' | 'history';
+type GeneratorStep = 'dashboard' | 'preview' | 'taking' | 'results' | 'history' | 'saved';
 
 export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
   onBackToHome,
@@ -71,6 +79,11 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
   // Results & History
   const [currentResult, setCurrentResult] = useState<ExamResult | null>(null);
   const [examHistory, setExamHistory] = useState<ExamResult[]>([]);
+
+  // Saved exams ("امتحاناتي")
+  const [savedExams, setSavedExams] = useState<SavedExam[]>(getSavedExams);
+  const [savedExamId, setSavedExamId] = useState<string | null>(null);
+  const [saveName, setSaveName] = useState('');
 
   useEffect(() => {
     const list = getDistinctLessons();
@@ -130,10 +143,17 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
   // Prepare and Preview
   const handleProceedToPreview = () => {
     if (selectedLessonIds.length === 0) return;
+    setSavedExamId(null);
+    setSaveName(examTitle);
     setStep('preview');
   };
 
   const handleStartExam = () => {
+    // Saved from the preview: solve exactly the questions that were saved.
+    if (savedExamId && activeQuestions.length > 0) {
+      startWithQuestions(activeQuestions, durationMinutes);
+      return;
+    }
     const config: ExamConfig = {
       title: examTitle || 'امتحان تقييمي ذكي',
       selectedLessonIds,
@@ -146,13 +166,74 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
     const questions = filterQuestionsForExam(config);
     if (questions.length === 0) return;
 
+    setSavedExamId(null);
+    startWithQuestions(questions, durationMinutes);
+  };
+
+  const startWithQuestions = (questions: Question[], minutes: number) => {
+    if (questions.length === 0) return;
     setActiveQuestions(questions);
     setCurrentQuestionIdx(0);
     setUserAnswers({});
     setFlaggedQuestionIds(new Set());
-    setTimeRemainingSeconds(durationMinutes * 60);
+    setTimeRemainingSeconds(minutes * 60);
     setExamStartTime(Date.now());
     setStep('taking');
+  };
+
+  // Re-solve a saved exam with exactly the same questions and settings.
+  const handleOpenSavedExam = (exam: SavedExam) => {
+    setExamTitle(exam.title);
+    setSelectedLessonIds(exam.config.selectedLessonIds);
+    setExamMode(exam.config.mode);
+    setDurationMinutes(exam.config.durationMinutes);
+    setRandomizeOrder(exam.config.randomize);
+    setSavedExamId(exam.id);
+    startWithQuestions(questionsByIds(exam.questionIds), exam.config.durationMinutes);
+  };
+
+  const handleSaveExam = () => {
+    const title = saveName.trim() || examTitle || 'امتحان محفوظ';
+    const id = `saved_${Date.now()}`;
+    const config: ExamConfig = {
+      title,
+      selectedLessonIds,
+      questionCount: Math.min(questionCount, totalAvailableQuestions),
+      mode: examMode,
+      durationMinutes,
+      randomize: randomizeOrder
+    };
+    // Before solving (preview) the questions are picked now and kept, so "start now" and later use the same set.
+    const questions = step === 'preview' ? filterQuestionsForExam(config) : activeQuestions;
+    if (questions.length === 0) return;
+    if (step === 'preview') setActiveQuestions(questions);
+    addSavedExam({
+      id,
+      title,
+      createdAt: Date.now(),
+      config: { ...config, questionCount: questions.length },
+      questionIds: questions.map(q => q.id)
+    });
+    setExamTitle(title);
+    setSavedExamId(id);
+    setSavedExams(getSavedExams());
+  };
+
+  const handleDeleteSavedExam = (exam: SavedExam) => {
+    if (!window.confirm(`حذف «${exam.title}» من امتحاناتي؟`)) return;
+    deleteSavedExam(exam.id);
+    setSavedExams(getSavedExams());
+    if (savedExamId === exam.id) setSavedExamId(null);
+  };
+
+  const wrongQuestions = currentResult
+    ? activeQuestions.filter(q => !currentResult.questionResults.find(r => r.questionId === q.id)?.isCorrect)
+    : [];
+
+  // Retake only the questions answered wrong (or left empty) in the last attempt.
+  const handleRetakeWrong = () => {
+    setSavedExamId(null); // a new, smaller question set: the student may save it separately
+    startWithQuestions(wrongQuestions, Math.max(1, Math.ceil(durationMinutes * wrongQuestions.length / Math.max(1, activeQuestions.length))));
   };
 
   const handleRecordAnswer = (questionId: string, answer: string) => {
@@ -182,6 +263,7 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
     const result = gradeExam(config, activeQuestions, userAnswers, timeSpent);
     saveExamResult(result);
     setCurrentResult(result);
+    setSaveName(examTitle);
     setExamHistory(getStoredExams());
     onStatsUpdated?.();
 
@@ -198,7 +280,7 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
 
   const handleRetakeExam = () => {
     if (!currentResult) return;
-    handleStartExam();
+    startWithQuestions(activeQuestions, durationMinutes); // same questions, fresh answers
   };
 
   // Filtered lessons for selection
@@ -208,6 +290,52 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
     const matchSkill = activeSkillFilter === 'all' || l.skill === activeSkillFilter;
     return matchSearch && matchSkill;
   });
+
+  // Save box: shown before solving (preview) and after solving (results).
+  const saveBox = (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+      {savedExamId ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="flex items-center gap-2 text-sm font-bold text-emerald-700">
+            <CheckCircle2 className="w-5 h-5" />
+            <span>هذا الامتحان محفوظ في «امتحاناتي» ويمكنك إعادة حله في أي وقت.</span>
+          </span>
+          <button
+            onClick={() => setStep('saved')}
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition-colors cursor-pointer"
+          >
+            عرض امتحاناتي
+          </button>
+        </div>
+      ) : (
+        <form
+          onSubmit={e => { e.preventDefault(); handleSaveExam(); }}
+          className="flex flex-wrap items-end gap-3"
+        >
+          <label className="flex-1 min-w-[200px]">
+            <span className="flex items-center gap-2 text-sm font-extrabold text-blue-950 mb-2">
+              <Bookmark className="w-4 h-4 text-amber-500" />
+              <span>احفظ هذا الامتحان باسم لتعيد حله لاحقاً:</span>
+            </span>
+            <input
+              type="text"
+              value={saveName}
+              onChange={e => setSaveName(e.target.value)}
+              placeholder="اسم الامتحان"
+              className="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-900"
+            />
+          </label>
+          <button
+            type="submit"
+            className="bg-blue-900 hover:bg-blue-950 text-white font-bold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 cursor-pointer"
+          >
+            <Save className="w-4 h-4" />
+            <span>حفظ في امتحاناتي</span>
+          </button>
+        </form>
+      )}
+    </div>
+  );
 
   const skillTabs: { id: SkillCategory | 'all'; label: string }[] = [
     { id: 'all', label: 'كافة المهارات' },
@@ -259,6 +387,21 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
           >
             <History className="w-4 h-4 text-amber-500" />
             <span>سجل الاختبارات ({examHistory.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSavedExams(getSavedExams());
+              setStep('saved');
+            }}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer ${
+              step === 'saved'
+                ? 'bg-blue-900 text-white shadow-xs'
+                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            <Bookmark className="w-4 h-4 text-amber-500" />
+            <span>امتحاناتي ({savedExams.length})</span>
           </button>
         </div>
       </div>
@@ -568,6 +711,8 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
             </div>
           </div>
 
+          <div className="mb-6">{saveBox}</div>
+
           <div className="flex items-center gap-3">
             <button
               onClick={() => setStep('dashboard')}
@@ -760,6 +905,15 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
                   <RotateCcw className="w-4 h-4" />
                   <span>إعادة الامتحان</span>
                 </button>
+                {wrongQuestions.length > 0 && wrongQuestions.length < activeQuestions.length && (
+                  <button
+                    onClick={handleRetakeWrong}
+                    className="bg-rose-500 hover:bg-rose-600 text-white font-black px-6 py-2.5 rounded-xl text-sm shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    <span>إعادة حل الأسئلة الخطأ فقط ({wrongQuestions.length})</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setStep('dashboard')}
                   className="bg-white/15 hover:bg-white/25 text-white font-bold px-6 py-2.5 rounded-xl text-sm border border-white/20 transition-all cursor-pointer"
@@ -769,6 +923,8 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
               </div>
             </div>
           </div>
+
+          {saveBox}
 
           {/* Recommendations for Revision */}
           {getRecommendedRevisionTopics(currentResult).length > 0 && (
@@ -923,6 +1079,14 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
 
                       <button
                         onClick={() => {
+                          // Show this exam's own questions and answers (not the last exam's).
+                          setActiveQuestions(questionsByIds(exam.questionResults.map(r => r.questionId)));
+                          setUserAnswers(exam.userAnswers);
+                          setExamTitle(exam.title);
+                          setExamMode(exam.config.mode);
+                          setDurationMinutes(exam.config.durationMinutes);
+                          setSaveName(exam.title);
+                          setSavedExamId(null);
                           setCurrentResult(exam);
                           setStep('results');
                         }}
@@ -936,6 +1100,59 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* SAVED EXAMS ("امتحاناتي") */}
+      {/* ======================================================== */}
+      {step === 'saved' && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+          <h2 className="text-xl font-extrabold text-blue-950 flex items-center gap-2 mb-6">
+            <Bookmark className="w-5 h-5 text-amber-500" />
+            <span>امتحاناتي المحفوظة</span>
+          </h2>
+
+          {savedExams.length === 0 ? (
+            <div className="text-center py-16 text-slate-400">
+              <Bookmark className="w-12 h-12 mx-auto mb-3 opacity-40" />
+              <h4 className="font-bold text-base text-slate-600 mb-1">لا توجد امتحانات محفوظة بعد</h4>
+              <p className="text-xs">أنشئ امتحاناً، واكتب له اسماً في صفحة المعاينة أو بعد حله، ثم اضغط «حفظ في امتحاناتي» ليظهر هنا.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {savedExams.map(exam => (
+                <div key={exam.id} className="py-4 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-bold text-sm md:text-base text-slate-900">{exam.title}</h4>
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                      <span>{new Date(exam.createdAt).toLocaleDateString('ar-EG')}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{exam.questionIds.length} أسئلة</span>
+                      <span aria-hidden="true">·</span>
+                      <span>نمط: {exam.config.mode === 'formal' ? 'رسمي' : 'تدريبي'}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenSavedExam(exam)}
+                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Play className="w-3.5 h-3.5" />
+                      <span>حل الامتحان</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteSavedExam(exam)}
+                      aria-label={`حذف ${exam.title}`}
+                      className="bg-slate-100 hover:bg-rose-100 hover:text-rose-700 text-slate-500 p-2 rounded-xl cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
