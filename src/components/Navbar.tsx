@@ -48,12 +48,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <header className="sticky top-0 z-[45] bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+        <div className="flex items-center justify-between h-16 sm:h-20 lg:h-[72px] gap-2 sm:gap-4">
           
           {/* Zone 1: Official Brand Logo & Title */}
-          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 sm:flex-initial cursor-pointer" onClick={() => handleNavClick('home')}>
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0 flex-1 cursor-pointer" onClick={() => handleNavClick('home')}>
             <div className="relative w-11 h-11 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full overflow-hidden shadow-xs border-2 border-amber-400 bg-white p-0.5 shrink-0 flex items-center justify-center">
               <img 
                 src="/logo.png" 
@@ -66,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-black text-sm sm:text-base md:text-lg text-blue-950 tracking-tight leading-tight truncate sm:whitespace-normal">
+              <span dir="ltr" className="font-black text-sm sm:text-base md:text-lg text-blue-950 tracking-tight leading-tight truncate text-right">
                 International Education Egypt
               </span>
               <span className="text-xs sm:text-sm font-bold text-amber-600 flex items-center gap-1.5 truncate">
@@ -77,36 +77,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Zone 2: Navigation Links (Desktop) */}
-          <nav className="hidden lg:flex items-center gap-1.5 xl:gap-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentTab === item.id;
-              const isStudy = item.id === 'study';
-
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-sm xl:text-base font-extrabold transition-all whitespace-nowrap cursor-pointer ${
-                    isActive 
-                      ? 'bg-blue-950 text-white shadow-sm ring-2 ring-blue-950/20' 
-                      : isStudy
-                        ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-blue-950 border border-amber-300 hover:from-amber-500 hover:to-amber-600 shadow-sm font-black btn-glow-gold'
-                        : 'text-slate-700 hover:text-blue-950 hover:bg-slate-100'
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'text-amber-400' : isStudy ? 'text-blue-950 fill-blue-950' : 'text-slate-500'}`} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-
           {/* Zone 3: Gamification & Action CTA */}
-          <div className="hidden sm:flex items-center gap-3 shrink-0">
+          <div className="hidden sm:flex items-center gap-2 md:gap-3 shrink-0">
             {/* Level & XP Capsule */}
-            <div className="flex items-center gap-2.5 bg-gradient-to-r from-blue-50 to-amber-50 border border-blue-200 rounded-2xl px-3.5 py-2 shadow-2xs">
+            <div className="hidden lg:flex items-center gap-2.5 bg-gradient-to-r from-blue-50 to-amber-50 border border-blue-200 rounded-2xl px-3.5 py-2 shadow-2xs">
               <div className="w-8 h-8 rounded-xl bg-blue-950 text-amber-300 font-black text-xs sm:text-sm flex items-center justify-center shadow-xs">
                 م {stats.level}
               </div>
@@ -137,10 +111,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <a
               href="/auth/logout"
               style={{ textDecoration: 'none' }}
-              className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl text-sm md:text-base font-extrabold text-slate-600 hover:text-blue-950 hover:bg-slate-100 transition-colors whitespace-nowrap border border-slate-200/80 bg-slate-50/50"
+              aria-label="تسجيل الخروج"
+              title="تسجيل الخروج"
+              className="flex items-center gap-2 px-3 md:px-3.5 py-2.5 rounded-2xl text-sm md:text-base font-extrabold text-slate-600 hover:text-blue-950 hover:bg-slate-100 transition-colors whitespace-nowrap border border-slate-200/80 bg-slate-50/50"
             >
               <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>خروج</span>
+              <span className="hidden md:inline">خروج</span>
             </a>
           </div>
 
@@ -174,11 +150,37 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
         </div>
+
+        {/* Zone 2: Navigation Links (Desktop) */}
+        <nav className="hidden lg:flex flex-wrap items-center justify-center gap-1 xl:gap-2 pb-2.5">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentTab === item.id;
+            const isStudy = item.id === 'study';
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`flex items-center gap-1.5 px-2.5 xl:px-4 py-2 rounded-2xl text-sm xl:text-[15px] font-extrabold transition-all whitespace-nowrap cursor-pointer ${
+                  isActive 
+                    ? 'bg-blue-950 text-white shadow-sm ring-2 ring-blue-950/20' 
+                    : isStudy
+                      ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-blue-950 border border-amber-300 hover:from-amber-500 hover:to-amber-600 shadow-sm font-black btn-glow-gold'
+                      : 'text-slate-700 hover:text-blue-950 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className={`hidden xl:block w-4 h-4 ${isActive ? 'text-amber-400' : isStudy ? 'text-blue-950 fill-blue-950' : 'text-slate-500'}`} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 shadow-lg animate-in slide-in-from-top duration-200">
+        <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 shadow-lg max-h-[calc(100dvh-4rem)] overflow-y-auto animate-in slide-in-from-top duration-200">
           <div className="flex items-center justify-between p-3 bg-blue-50/70 rounded-xl mb-4">
             <div className="flex items-center gap-2">
               <Award className="w-5 h-5 text-amber-500" />
@@ -208,6 +210,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </button>
               );
             })}
+            <a
+              href="/auth/logout"
+              style={{ textDecoration: 'none' }}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold text-right text-rose-700 hover:bg-rose-50 transition-colors border-t border-slate-100 mt-2"
+            >
+              <LogOut className="w-5 h-5" />
+              <span>تسجيل الخروج</span>
+            </a>
           </div>
         </div>
       )}
