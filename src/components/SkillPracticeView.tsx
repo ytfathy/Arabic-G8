@@ -19,6 +19,7 @@ import { getInfographicByLessonName } from '../data/lessonInfographics';
 import { LessonInfographic } from '../types/infographics';
 import { InfographicModal } from './InfographicModal';
 import { QuestionCard } from './QuestionCard';
+import { WordBankView } from './WordBankView';
 import { toggleBookmark, getBookmarks } from '../utils/storage';
 import { speechReader } from '../utils/textSpeechReader';
 
@@ -38,6 +39,8 @@ export const SkillPracticeView: React.FC<SkillPracticeViewProps> = ({
   const [isReadingMainPassage, setIsReadingMainPassage] = useState<boolean>(false);
   const [showPassageText, setShowPassageText] = useState<boolean>(true);
   const [activeModalLesson, setActiveModalLesson] = useState<LessonInfographic | null>(null);
+  const [showWordBank, setShowWordBank] = useState<boolean>(false);
+  const hasWordBank = activeSkill === 'reading' || activeSkill === 'literature';
 
   const skillTabs: { id: SkillCategory; label: string; icon: any; color: string; desc: string }[] = [
     { 
@@ -214,6 +217,7 @@ export const SkillPracticeView: React.FC<SkillPracticeViewProps> = ({
                 speechReader.stop();
                 setActiveSkill(tab.id);
                 setSelectedLessonName('all');
+                setShowWordBank(false);
               }}
               className={`p-3 sm:p-4 rounded-2xl border text-right transition-all cursor-pointer flex flex-col justify-between ${
                 isActive 
@@ -312,6 +316,20 @@ export const SkillPracticeView: React.FC<SkillPracticeViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
+            {hasWordBank && (
+              <button
+                type="button"
+                onClick={() => setShowWordBank(v => !v)}
+                aria-pressed={showWordBank}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm sm:text-base font-black transition-all cursor-pointer shadow-md active:scale-95 border ${
+                  showWordBank ? 'bg-blue-950 text-white border-blue-950 ring-2 ring-amber-400' : 'bg-white text-blue-950 border-blue-200 hover:bg-blue-50'
+                }`}
+              >
+                <span>📚</span>
+                <span>{showWordBank ? 'العودة لأسئلة الدروس' : 'بنك الكلمات'}</span>
+              </button>
+            )}
+
             {activePassage && (
               <button
                 type="button"
@@ -353,7 +371,9 @@ export const SkillPracticeView: React.FC<SkillPracticeViewProps> = ({
       </div>
 
       {/* DEDICATED READING PASSAGE CARD WITH "اقرأ لي 🔊" FOR THE READING BRANCH */}
-      {(activeSkill === 'reading' || activeSkill === 'listening' || activeSkill === 'literature') && activePassage && (
+      {showWordBank && hasWordBank && <WordBankView />}
+
+      {!(showWordBank && hasWordBank) && (activeSkill === 'reading' || activeSkill === 'listening' || activeSkill === 'literature') && activePassage && (
         <div className={`border-2 rounded-3xl p-5 sm:p-7 shadow-sm transition-all ${
           isReadingMainPassage
             ? 'bg-amber-50/95 border-amber-400 ring-2 ring-amber-300 shadow-md'
@@ -445,7 +465,7 @@ export const SkillPracticeView: React.FC<SkillPracticeViewProps> = ({
       )}
 
       {/* Question List Feed */}
-      <div className="space-y-6">
+      <div className={`space-y-6 ${showWordBank && hasWordBank ? 'hidden' : ''}`}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
             <span>أسئلة وتطبيقات كتاب الوزارة للدرس</span>

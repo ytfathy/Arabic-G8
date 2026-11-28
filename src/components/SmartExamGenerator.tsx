@@ -36,10 +36,11 @@ import {
 import { getDistinctLessons, getAllQuestions } from '../data/questionBank';
 import { filterQuestionsForExam, gradeExam, getRecommendedRevisionTopics } from '../utils/examGenerator';
 import { saveExamResult, getStoredExams, getSavedExams, addSavedExam, deleteSavedExam, SavedExam } from '../utils/storage';
+import { buildWordExamQuestions, getWordBankLessonSummaries, getWordQuestionById } from '../utils/wordBank';
 
 const questionsByIds = (ids: string[]): Question[] => {
   const all = new Map(getAllQuestions().map(q => [q.id, q]));
-  return ids.map(id => all.get(id)).filter((q): q is Question => !!q);
+  return ids.map(id => all.get(id) ?? getWordQuestionById(id)).filter((q): q is Question => !!q);
 };
 import { QuestionCard } from './QuestionCard';
 import { mascotService } from '../utils/mascotService';
@@ -59,6 +60,7 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
   const [lessons, setLessons] = useState<LessonSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSkillFilter, setActiveSkillFilter] = useState<SkillCategory | 'all'>('all');
+  const [wordsOnly, setWordsOnly] = useState(false); // exam from «بنك الكلمات» only
 
   // Exam Configuration State
   const [examTitle, setExamTitle] = useState('امتحان لغتي التقييمي الذكي');
@@ -135,6 +137,19 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
     setSelectedLessonIds(prev => Array.from(new Set([...prev, ...skillLessons])));
   };
 
+  const handleSwitchSource = (words: boolean) => {
+    const list = words ? getWordBankLessonSummaries() : getDistinctLessons();
+    setWordsOnly(words);
+    setLessons(list);
+    setSelectedLessonIds(list.slice(0, 3).map(l => l.id));
+    setActiveSkillFilter('all');
+    setSearchQuery('');
+    setExamTitle(words ? 'امتحان بنك الكلمات' : 'امتحان لغتي التقييمي الذكي');
+  };
+
+  const pickQuestions = (config: ExamConfig): Question[] =>
+    wordsOnly ? buildWordExamQuestions(config.selectedLessonIds, config.questionCount) : filterQuestionsForExam(config);
+
   // Available questions in selected lessons
   const totalAvailableQuestions = lessons
     .filter(l => selectedLessonIds.includes(l.id))
@@ -163,7 +178,7 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
       randomize: randomizeOrder
     };
 
-    const questions = filterQuestionsForExam(config);
+    const questions = pickQuestions(config);
     if (questions.length === 0) return;
 
     setSavedExamId(null);
@@ -204,7 +219,7 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
       randomize: randomizeOrder
     };
     // Before solving (preview) the questions are picked now and kept, so "start now" and later use the same set.
-    const questions = step === 'preview' ? filterQuestionsForExam(config) : activeQuestions;
+    const questions = step === 'preview' ? pickQuestions(config) : activeQuestions;
     if (questions.length === 0) return;
     if (step === 'preview') setActiveQuestions(questions);
     addSavedExam({
@@ -414,6 +429,30 @@ export const SmartExamGenerator: React.FC<SmartExamGeneratorProps> = ({
           
           {/* Main Column: Lesson Selection */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Question source: whole curriculum or the word bank only */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+              <h2 className="text-sm font-extrabold text-blue-950 mb-3">مصدر أسئلة الامتحان:</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { words: false, title: 'أسئلة المنهج', desc: 'كل أنواع أسئلة الدروس المختارة' },
+                  { words: true, title: '📚 بنك الكلمات فقط', desc: 'المعنى والمضاد والجمع والمفرد لكلمات القراءة والنصوص' }
+                ].map(opt => (
+                  <button
+                    key={opt.title}
+                    type="button"
+                    aria-pressed={wordsOnly === opt.words}
+                    onClick={() => wordsOnly !== opt.words && handleSwitchSource(opt.words)}
+                    className={`text-right p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                      wordsOnly === opt.words ? 'border-blue-900 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className="block font-extrabold text-sm text-blue-950">{opt.title}</span>
+                    <span className="block text-xs text-slate-500 font-medium mt-0.5">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div>
