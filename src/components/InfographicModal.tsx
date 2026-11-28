@@ -194,7 +194,7 @@ export const InfographicModal: React.FC<InfographicModalProps> = ({
                 }`}
               >
                 <Sparkles className="w-4 h-4" />
-                <span>القواعد النحوية والإعراب</span>
+                <span>{info.skill === 'spelling' ? 'القاعدة الإملائية والأمثلة' : info.skill === 'writing' ? 'خطوات الكتابة والنماذج' : 'القواعد النحوية والإعراب'}</span>
               </button>
             )}
 
@@ -445,7 +445,7 @@ export const InfographicModal: React.FC<InfographicModalProps> = ({
                   {/* Examples Table */}
                   <div>
                     <h5 className="font-extrabold text-slate-900 text-sm sm:text-base mb-2.5">
-                      أمثلة نموذجية مع الإعراب الكامل:
+                      {info.skill === 'grammar' ? 'أمثلة نموذجية مع الإعراب الكامل:' : 'أمثلة نموذجية مع الشرح:'}
                     </h5>
                     <div className="space-y-2.5">
                       {rule.examples.map((ex, exIdx) => (

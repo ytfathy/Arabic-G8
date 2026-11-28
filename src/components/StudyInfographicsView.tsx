@@ -302,7 +302,8 @@ export const StudyInfographicsView: React.FC<StudyInfographicsViewProps> = ({
             { id: 'reading', label: 'القراءة والفهم' },
             { id: 'grammar', label: 'النحو والقواعد' },
             { id: 'literature', label: 'النصوص والبلاغة' },
-            { id: 'spelling', label: 'قواعد الإملاء' }
+            { id: 'spelling', label: 'قواعد الإملاء' },
+            { id: 'writing', label: 'التعبير والخط' }
           ].map(skill => (
             <button
               key={skill.id}
